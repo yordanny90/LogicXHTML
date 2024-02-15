@@ -171,32 +171,49 @@ class Converter{
         return $this->num_line;
     }
 
+    /**
+     * @param string $filename
+     * @return false|int
+     * @throws Exception
+     */
     public function saveToFile(string $filename){
         if(!$this->success) return false;
+        $info=$this->infoCode();
         if(fseek($this->result, 0)==-1) return false;
         if(!($dest=fopen($filename, 'w+'))) return false;
         fwrite($dest, "<?php\n");
-        fwrite($dest, $this->infoCode());
+        fwrite($dest, $info);
         $copy=stream_copy_to_stream($this->result, $dest);
         fclose($dest);
         return $copy;
     }
 
+    /**
+     * @param $dest
+     * @return false|int
+     * @throws Exception
+     */
     public function saveToResource($dest){
         if(!$this->success) return false;
+        $info=$this->infoCode();
         if(fseek($this->result, 0)==-1) return false;
         if(!is_resource($dest)) return false;
         fwrite($dest, "<?php\n");
-        fwrite($dest, $this->infoCode());
+        fwrite($dest, $info);
         $copy=stream_copy_to_stream($this->result, $dest);
         return $copy;
     }
 
+    /**
+     * @return false|int
+     * @throws Exception
+     */
     public function saveToOutput(){
         if(!$this->success) return false;
+        $info=$this->infoCode();
         if(fseek($this->result, 0)==-1) return false;
         echo "<?php\n";
-        echo $this->infoCode();
+        echo $info;
         $copy=fpassthru($this->result);
         return $copy;
     }
@@ -209,6 +226,10 @@ class Converter{
         return array_keys($this->useFn);
     }
 
+    /**
+     * @return string
+     * @throws Exception
+     */
     public function infoCode(){
         $str='$info=[]'.";\n";
         $str.='$info["use_prop"]='.$this->_export($this->usesProp()).";\n";
@@ -225,6 +246,12 @@ class Converter{
         return $ln;
     }
 
+    /**
+     * @param $var
+     * @param bool $enclose
+     * @return array|string|string[]|null
+     * @throws Exception
+     */
     private function _export($var, bool $enclose=false){
         if(is_array($var) || is_object($var)){
             $res=[];
@@ -255,6 +282,12 @@ class Converter{
         return $res;
     }
 
+    /**
+     * @param string $name
+     * @param bool $enclose
+     * @return array|string|string[]|null
+     * @throws Exception
+     */
     private function _as_scalar(string $name, bool $enclose=false){
         if(is_numeric($name) || in_array($name,self::CONSTANTES)) return strval($name);
         if($name!=='' && in_array($name[0], ['"', "'"])){
@@ -282,11 +315,21 @@ class Converter{
         return null;
     }
 
+    /**
+     * @param $name
+     * @return string
+     * @throws Exception
+     */
     private function _localName($name){
         if(!preg_match(self::NAME_SIMPLE, $name)) throw new Exception("Nombre inválido: '{$name}'");
         return self::VAR_SCOPE.'->'.$name;
     }
 
+    /**
+     * @param $name
+     * @return array|string|string[]
+     * @throws Exception
+     */
     private function _getVar($name){
         $scalar=$this->_as_scalar($name, true);
         if($scalar!==null) return $scalar;
@@ -305,6 +348,11 @@ class Converter{
         throw new Exception("Nombre variable inválida: '{$name}'");
     }
 
+    /**
+     * @param $name
+     * @return string
+     * @throws Exception
+     */
     private function _setVar($name){
         if(preg_match(self::NAME_SIMPLE, $name, $m)){
             return self::VAR_SCOPE.'->'.$m[1];
@@ -323,6 +371,14 @@ class Converter{
         throw new Exception("Valor inválido: '{$name}'");
     }
 
+    /**
+     * @param string $code
+     * @param $count
+     * @param $extra
+     * @param $toArray
+     * @return string
+     * @throws Exception
+     */
     private function _group(string $code, &$count, &$extra=null, $toArray=false){
         $extra=null;
         $begin=$code[0];
@@ -431,6 +487,12 @@ class Converter{
         return null;
     }
 
+    /**
+     * @param $code
+     * @param $extra
+     * @return array|string|string[]
+     * @throws Exception
+     */
     private function _code($code, &$extra=null){
         $code=trim($code);
         $extra=null;
@@ -570,6 +632,11 @@ class Converter{
         throw new Exception("Código inválido: '$code'");
     }
 
+    /**
+     * @param string $line
+     * @return string|null
+     * @throws Exception
+     */
     private function _action(string $line){
         $line=trim($line);
         if(!preg_match(self::REGEX_ACTION, $line, $m)) return null;
@@ -641,26 +708,36 @@ class Converter{
             throw new Exception('Código inválido: '.$line);
         }
         try{
-            if(!eval('return function(){'.$r.';};')) throw new Exception('Código inválido: '.$line."\n".$err->getMessage());
+            if(!eval('return function(){'.$r.';};')) throw new Exception('Código inválido: '.$line);
         }
         catch(\ParseError $err){
-            throw new Exception('Código inválido: '.$line."\n".$err->getMessage());
+            throw new Exception('Código inválido: '.$line, 0, $err);
         }
         return $r;
     }
 
+    /**
+     * @param string $code
+     * @return array|string|string[]
+     * @throws Exception
+     */
     protected function convertCode(string $code){
         $r=$this->_code($code, $extra);
         if($extra!==null) throw new Exception("Código inválido: ".$extra);
         try{
-            if(!eval('return function(){'.$r.';};')) throw new Exception('Código inválido: '.$line."\n".$err->getMessage());
+            if(!eval('return function(){'.$r.';};')) throw new Exception('Código inválido: '.$code);
         }
         catch(\ParseError $err){
-            throw new Exception('Código inválido: '.$code."\n".$err->getMessage());
+            throw new Exception('Código inválido: '.$code, 0, $err);
         }
         return $r;
     }
 
+    /**
+     * @param string $line
+     * @return array|string|string[]|null
+     * @throws Exception
+     */
     private function convertLine(string $line){
         if(preg_match(self::REGEX_PRINT, $line, $m)){
             if(($m[1]??'')!=='') $r[]=$this->convertLine($m[1]);
@@ -735,6 +812,11 @@ class Converter{
         $this->_print($this->convertLine($line));
     }
 
+    /**
+     * @param $attrs
+     * @return array
+     * @throws Exception
+     */
     private function attrsToArray($attrs){
         $params=@simplexml_load_string('<a '.$attrs.'></a>');
         if($params===false) throw new Exception("Atributos corruptos: '$attrs'");
@@ -742,6 +824,14 @@ class Converter{
         return $params;
     }
 
+    /**
+     * @param string $type
+     * @param string|null $attrs
+     * @param string $eval
+     * @param bool $else
+     * @return void
+     * @throws Exception
+     */
     private function _openControl(string $type, ?string $attrs, string $eval, bool $else){
         if(!in_array($type, self::INDEX_TYPES, true)) throw new Exception("Control inesperado: '$type'");
         if(!$else && in_array($type, [
@@ -810,6 +900,11 @@ class Converter{
         }
     }
 
+    /**
+     * @param $type
+     * @return void
+     * @throws Exception
+     */
     private function _closeControl($type){
         if(!in_array($type, self::INDEX_TYPES, true)) throw new Exception("Cierre inesperado: '$type'");
         if($type===self::TYPE_DO){

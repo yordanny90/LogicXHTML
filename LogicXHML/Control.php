@@ -127,6 +127,12 @@ class Control{
         }
     }
 
+    /**
+     * @param $name
+     * @param array $params
+     * @return null
+     * @throws Exception
+     */
     public function &fn($name, array $params=[]){
         $res=null;
         if(is_callable($fn=$this->fn_get($name))) $res=$fn(...$params)??null;
@@ -261,6 +267,13 @@ class Control{
         return $i>0;
     }
 
+    /**
+     * @param Scope $S
+     * @param callable $fn
+     * @return string
+     * @throws LoopBreak
+     * @throws LoopContinue
+     */
     public function buffer(Scope &$S, callable $fn){
         $L=new Scope($S);
         $old=$this->buffer;
