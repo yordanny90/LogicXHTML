@@ -1,6 +1,6 @@
 <?php
 
-namespace LogicXHML;
+namespace LogicXHTML;
 
 class Stop extends \Exception{
 }

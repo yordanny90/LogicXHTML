@@ -1,6 +1,6 @@
 <?php
 
-namespace LogicXHML;
+namespace LogicXHTML;
 
 class LoopBreak extends \Exception{
 }

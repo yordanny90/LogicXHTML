@@ -1,6 +1,6 @@
 <?php
 
-namespace LogicXHML;
+namespace LogicXHTML;
 
 use \Exception;
 
