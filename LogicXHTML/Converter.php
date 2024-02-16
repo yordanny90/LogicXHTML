@@ -64,6 +64,7 @@ class Converter{
     protected $filename;
     protected $origin;
     protected $result;
+    protected $pre;
     protected $success=false;
     protected $num_line=0;
     protected $lvl=[];
@@ -133,13 +134,12 @@ class Converter{
      * @return bool
      * @throws Exception
      */
-    public function convertFile($extra=null){
+    public function convert($extra=null){
         $this->_restart();
         if(fseek($this->origin, 0)!=0) throw new Exception("No se puede leer el origen");
         if(!is_string($ln=$this->nextLine())) throw new Exception("Inicio inesperado");
         if(!preg_match(self::REGEX_BEGIN_DOC, $ln, $m)) throw new Exception("Inicio inesperado");
-        $this->_add('$info["extra"]='.$this->_export($extra).';');
-        $this->_add('$info["attrs"]='.$this->_export($this->attrsToArray($m[2]??'')).';');
+        $attrs=$this->attrsToArray($m[2]??'');
         unset($m);
         $this->_add('$call=function('.Control::class.' '.self::VAR_CONTROL.', ?'.Scope::class.' $D=null){');
         $this->lvl[]=self::TYPE_MAIN;
@@ -153,6 +153,9 @@ class Converter{
             throw new Exception("Final inesperado: '{$last}'");
         }
         $this->_add('return $call;');
+        $this->pre='';
+        $this->pre.='$info["extra"]='.$this->_export($extra).';'."\n";
+        $this->pre.='$info["attrs"]='.$this->_export($attrs).';'."\n";
         $this->success=true;
         return true;
     }
@@ -178,11 +181,12 @@ class Converter{
      */
     public function saveToFile(string $filename){
         if(!$this->success) return false;
-        $info=$this->infoCode();
+        $infoCode=$this->infoCode();
         if(fseek($this->result, 0)==-1) return false;
         if(!($dest=fopen($filename, 'w+'))) return false;
         fwrite($dest, "<?php\n");
-        fwrite($dest, $info);
+        fwrite($dest, $infoCode);
+        fwrite($dest, $this->pre);
         $copy=stream_copy_to_stream($this->result, $dest);
         fclose($dest);
         return $copy;
@@ -195,11 +199,12 @@ class Converter{
      */
     public function saveToResource($dest){
         if(!$this->success) return false;
-        $info=$this->infoCode();
+        $infoCode=$this->infoCode();
         if(fseek($this->result, 0)==-1) return false;
         if(!is_resource($dest)) return false;
         fwrite($dest, "<?php\n");
-        fwrite($dest, $info);
+        fwrite($dest, $infoCode);
+        fwrite($dest, $this->pre);
         $copy=stream_copy_to_stream($this->result, $dest);
         return $copy;
     }
@@ -210,12 +215,29 @@ class Converter{
      */
     public function saveToOutput(){
         if(!$this->success) return false;
-        $info=$this->infoCode();
+        $infoCode=$this->infoCode();
         if(fseek($this->result, 0)==-1) return false;
         echo "<?php\n";
-        echo $info;
+        echo $infoCode;
+        echo $this->pre;
         $copy=fpassthru($this->result);
         return $copy;
+    }
+
+    /**
+     * @param $infoVar
+     * @return false|callable
+     */
+    public function saveToFunction(&$info=null){
+        if(!$this->success) return false;
+        $infoCode=$this->infoCode();
+        if(fseek($this->result, 0)==-1) return false;
+        ob_start();
+        echo $infoCode;
+        echo $this->pre;
+        fpassthru($this->result);
+        $fn=eval(ob_get_clean());
+        return $fn;
     }
 
     public function usesProp(){
