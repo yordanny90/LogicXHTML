@@ -175,7 +175,7 @@ class Control{
      * @return mixed|null
      */
     public function get($name){
-        return $this->props->$name;
+        return $this->props->get($name);
     }
 
     /**
@@ -290,7 +290,7 @@ class Control{
     }
 
     public function __get(string $name){
-        return $this->get(substr($name, 1));
+        return $this->get($name);
     }
 
     public function __set(string $name, $value): void{

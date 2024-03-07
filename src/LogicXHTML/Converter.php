@@ -2,20 +2,20 @@
 
 namespace LogicXHTML;
 
-use \Exception;
-
 class Converter{
     const SYMBOL=':';
-    const NAME_PROP='/^\$\.([a-z]\w*)$/i';
-    const INIT_PROP='/^(\$\.[a-z]\w*)(.*)$/i';
-    const PREG_SCOPE='(?:[_RP]\.)?[a-z]\w*';
-    const INIT_SCOPE='/^('.self::PREG_SCOPE.')(.*)$/i';
-    const REGEX_SCOPE_ALL='/^([_RP])\.([a-z]\w*)$/i';
+    const NAME_PROP='/^\$\.([a-zA-Z_]\w*)$/';
+    const INIT_PROP='/^(\$\.[a-zA-Z_]\w*)(.*)$/';
+    const PREG_SCOPE='(?:[RPLU_]\.)?[a-zA-Z_]\w*';
+    const INIT_SCOPE='/^('.self::PREG_SCOPE.')(.*)$/';
+    const REGEX_SCOPE_ALL='/^([RPLU_])\.([a-zA-Z_]\w*)$/';
     const SCOPE_ROOT='R';
     const SCOPE_PARENT='P';
+    const SCOPE_LOCAL='L';
+    const SCOPE_UP='U';
     const SCOPE_AUTO='_';
-    const NAME_SIMPLE='/^([a-z]\w*)$/i';
-    const INIT_NUMERIC='/^(-?\d+(?:\.\d*)?(?:e[-+]?\d+)?)(.*)$/i';
+    const NAME_SIMPLE='/^([a-zA-Z_]\w*)$/';
+    const INIT_NUMERIC='/^(-?\d+(?:\.\d*)?(?:[eE][-+]?\d+)?)(.*)$/';
     const INIT_STRING='/^('.self::PREG_STRING.')(.*)$/';
     const CONSTANTES=[
         'true',
@@ -24,7 +24,7 @@ class Converter{
     ];
     const PREG_STRING='\'(?:\\\[\w\"\'\\\]|[^\\\'])*\'|\"(?:\\\[\w\"\'\\\]|[^\\\"])*\"';
     const REGEX_COMMENT='/^\/\//';
-    const REGEX_CODE='/^(?:('.self::PREG_SCOPE.')\s*=\s*)([^\=].*)$/i';
+    const REGEX_CODE='/^(?:('.self::PREG_SCOPE.')\s*=\s*)([^\=].*)$/';
     const REGEX_ACTION='/^(@[a-z]+)(\b.*)$/i';
     const PREG_TYPES='PRINT|DO|IF|ELSEIF|ELSE|FOR|FOREACH|ELSEFOR|BUFFER';
     const REGEX_PRINT='/^(.*)\:\{((?:.(?<!\}\:))+)\}\:(.*\s*)$/';
@@ -361,7 +361,9 @@ class Converter{
         elseif(preg_match(self::REGEX_SCOPE_ALL, $name, $m)){
             if($m[1]==self::SCOPE_ROOT) return self::VAR_SCOPE.'->R()->'.$m[2];
             elseif($m[1]==self::SCOPE_PARENT) return self::VAR_SCOPE.'->P()->'.$m[2];
-            elseif($m[1]==self::SCOPE_AUTO) return self::VAR_SCOPE.'->_'.$m[2];
+            elseif($m[1]==self::SCOPE_LOCAL) return self::VAR_SCOPE.'->L()->'.$m[2];
+            elseif($m[1]==self::SCOPE_UP) return self::VAR_SCOPE.'->U()->'.$m[2];
+            elseif($m[1]==self::SCOPE_AUTO) return self::VAR_SCOPE.'->'.$m[2];
         }
         elseif(preg_match(self::NAME_PROP, $name, $m)){
             $this->useProps[$m[1]]=null;
@@ -382,7 +384,9 @@ class Converter{
         elseif(preg_match(self::REGEX_SCOPE_ALL, $name, $m)){
             if($m[1]==self::SCOPE_ROOT) return self::VAR_SCOPE.'->R()->'.$m[2];
             elseif($m[1]==self::SCOPE_PARENT) return self::VAR_SCOPE.'->P()->'.$m[2];
-            elseif($m[1]==self::SCOPE_AUTO) return self::VAR_SCOPE.'->_'.$m[2];
+            elseif($m[1]==self::SCOPE_LOCAL) return self::VAR_SCOPE.'->L()->'.$m[2];
+            elseif($m[1]==self::SCOPE_UP) return self::VAR_SCOPE.'->U()->'.$m[2];
+            elseif($m[1]==self::SCOPE_AUTO) return self::VAR_SCOPE.'->'.$m[2];
         }
         elseif(preg_match(self::NAME_PROP, $name)){
             throw new Exception("Propiedad no modificable: '{$name}'");

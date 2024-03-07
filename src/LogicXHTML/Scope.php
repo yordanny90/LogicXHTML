@@ -9,6 +9,12 @@ class Scope implements \Countable, \IteratorAggregate{
      * @see Scope::get()
      * @see Scope::keys()
      * @see Scope::count()
+     * @see Scope::U_get()
+     * @see Scope::U_keys()
+     * @see Scope::U_count()
+     * @see Scope::L_get()
+     * @see Scope::L_keys()
+     * @see Scope::L_count()
      * @see Scope::P_get()
      * @see Scope::P_keys()
      * @see Scope::P_count()
@@ -20,6 +26,12 @@ class Scope implements \Countable, \IteratorAggregate{
         '_.get'=>'get',
         '_.keys'=>'keys',
         '_.count'=>'count',
+        'U.get'=>'U_get',
+        'U.keys'=>'U_keys',
+        'U.count'=>'U_count',
+        'L.get'=>'L_get',
+        'L.keys'=>'L_keys',
+        'L.count'=>'L_count',
         'P.get'=>'P_get',
         'P.keys'=>'P_keys',
         'P.count'=>'P_count',
@@ -31,8 +43,8 @@ class Scope implements \Countable, \IteratorAggregate{
     /**
      * @var Scope
      */
-    private $_P;
-    private $_D=[];
+    private $P;
+    private $D=[];
 
     public static function fnSpecial_name(string $name){
         return self::FN_SPECIAL[$name]??null;
@@ -42,7 +54,7 @@ class Scope implements \Countable, \IteratorAggregate{
      * @param Scope|null $parent
      */
     public function __construct(?Scope $parent=null){
-        $this->_P=$parent;
+        $this->P=$parent;
     }
 
     public function fromArray(array $data){
@@ -51,17 +63,22 @@ class Scope implements \Countable, \IteratorAggregate{
         }
     }
 
-    public function isolate(int $levels=0){
-        $t=clone $this;
-        $t->_P=null;
-        if($this->_P && $levels>0){
-            $t->_P=$this->_P->isolate($levels-1);
+    /**
+     * Clona el scope actual, desechando los scope padres que se indiquen
+     * @param int $levels
+     * @return Scope
+     */
+    public function &L(int $levels=0){
+        $t=new static();
+        $t->D=&$this->D;
+        if($this->P && $levels>0){
+            $t->P=&$this->P->L($levels-1);
         }
         return $t;
     }
 
     private function _level(int $level): int{
-        if($this->_P && $level<self::MAX_LEVEL) return $this->_P->_level($level+1);
+        if($this->P && $level<self::MAX_LEVEL) return $this->P->_level($level+1);
         return $level;
     }
 
@@ -70,7 +87,7 @@ class Scope implements \Countable, \IteratorAggregate{
     }
 
     private function &_R(int $level){
-        if($this->_P && $level<self::MAX_LEVEL) return $this->_P->_R($level+1);
+        if($this->P && $level<self::MAX_LEVEL) return $this->P->_R($level+1);
         return $this;
     }
     /**
@@ -86,49 +103,59 @@ class Scope implements \Countable, \IteratorAggregate{
      * @return Scope
      */
     public function &P(){
-        if($this->_P) return $this->_P;
+        if($this->P) return $this->P->L();
         return $this;
     }
 
+    /**
+     * Devuelve el conjunto de datos padre. Si no tiene, devuelve un scope vacío
+     * @return Scope
+     */
+    public function &U(){
+        if($this->P) return $this->P;
+        $n=new static();
+        return $n;
+    }
+
     private function _toArray(int $level){
-        if($this->_P && $level<self::MAX_LEVEL) return array_merge($this->_P->_toArray($level+1), $this->_D);
-        else return $this->_D;
+        if($this->P && $level<self::MAX_LEVEL) return array_merge($this->P->_toArray($level+1), $this->D);
+        else return $this->D;
     }
 
     private function _keys(int $level){
-        if($this->_P && $level<self::MAX_LEVEL) return array_merge($this->_P->_keys($level+1), array_keys($this->_D));
-        else return array_keys($this->_D);
+        if($this->P && $level<self::MAX_LEVEL) return array_merge($this->P->_keys($level+1), array_keys($this->D));
+        else return array_keys($this->D);
     }
 
     private function _get(string $name, int $level){
-        if(key_exists($name, $this->_D)) return $this->_D[$name];
-        return ($this->_P && $level<self::MAX_LEVEL)?$this->_P->_get($name, $level+1):null;
+        if(key_exists($name, $this->D)) return $this->D[$name];
+        return ($this->P && $level<self::MAX_LEVEL)?$this->P->_get($name, $level+1):null;
     }
 
     private function _replace(string $name, $value, int $level): bool{
-        if(key_exists($name, $this->_D)){
-            $this->_D[$name]=$value;
+        if(key_exists($name, $this->D)){
+            $this->D[$name]=$value;
             return true;
         }
-        elseif($this->_P && $level<self::MAX_LEVEL){
-            return $this->_P->_replace($name, $value, $level+1);
+        elseif($this->P && $level<self::MAX_LEVEL){
+            return $this->P->_replace($name, $value, $level+1);
         }
         return false;
     }
 
     private function _unsetFind(string $name, int $level){
-        if(key_exists($name, $this->_D)){
-            unset($this->_D[$name]);
+        if(key_exists($name, $this->D)){
+            unset($this->D[$name]);
             return true;
         }
-        elseif($this->_P && $level<self::MAX_LEVEL){
-            return $this->_P->_unsetFind($name, $level+1);
+        elseif($this->P && $level<self::MAX_LEVEL){
+            return $this->P->_unsetFind($name, $level+1);
         }
         return false;
     }
 
     public function toArrayIsolated(){
-        return $this->_D;
+        return $this->D;
     }
 
     public function toArray(){
@@ -171,18 +198,42 @@ class Scope implements \Countable, \IteratorAggregate{
         return $this->P()->get($name);
     }
 
+    public function L_keys(){
+        return $this->L()->keys();
+    }
+
+    public function L_count(): int{
+        return $this->L()->count();
+    }
+
+    public function L_get(string $name){
+        return $this->L()->get($name);
+    }
+
+    public function U_keys(){
+        return $this->U()->keys();
+    }
+
+    public function U_count(): int{
+        return $this->U()->count();
+    }
+
+    public function U_get(string $name){
+        return $this->U()->get($name);
+    }
+
     public function set(string $name, $value){
-        $this->_D[$name]=$value;
+        $this->D[$name]=$value;
     }
 
     public function replace(string $name, $value){
         if(!$this->_replace($name, $value, 0)){
-            $this->_D[$name]=$value;
+            $this->D[$name]=$value;
         }
     }
 
     public function unset(string $name){
-        unset($this->_D[$name]);
+        unset($this->D[$name]);
     }
 
     public function unsetFind(string $name){
@@ -190,30 +241,15 @@ class Scope implements \Countable, \IteratorAggregate{
     }
 
     public function __unset(string $name): void{
-        if(($name[0]??null)==='_'){
-            $this->unsetFind(substr($name, 1));
-        }
-        else{
-            $this->unset($name);
-        }
+        $this->unset($name);
     }
 
     public function __get(string $name){
-        if(($name[0]??null)==='_'){
-            return $this->get(substr($name, 1));
-        }
-        else{
-            return $this->get($name);
-        }
+        return $this->get($name);
     }
 
     public function __set(string $name, $value){
-        if(($name[0]??null)==='_'){
-            $this->replace(substr($name, 1), $value);
-        }
-        else{
-            $this->set($name, $value);
-        }
+        $this->set($name, $value);
     }
 
     public function getIterator(): Traversable{
