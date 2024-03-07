@@ -35,6 +35,8 @@ Todo el código debe estár dentro de estas etiquetas
 </LogicXHTML>
 ```
 
+Mediante el [Converter](src/LogicXHTML/Converter.php) podrá convertir el código XHTML en una función PHP que recibirá un [Control][control] para generar una salida
+
 # Funciones y propiedades
 
 Las funciones se definen como parte del [Control][control] para ser llamadas desde el LogicXHTML
@@ -66,6 +68,7 @@ if($converter->convert()){
     $control->saveToOutput();
 }
 ```
+
 En el `archivo.xhtml` se llaman las funciones con sus respectivos parametros, y la lectura de propiedades se hace por medio del simbolo `$`
 ```xhtml
 <LogicXHTML>
