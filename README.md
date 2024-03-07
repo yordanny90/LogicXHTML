@@ -59,6 +59,12 @@ $props=new \LogicXHTML\Scope();
 $props->prop_1='Valor 1';
 $props->prop_2='Valor 2';
 $control->setProps($props);
+$converter=\LogicXHTML\Converter::loadFile('archivo.xhtml'));
+if($converter->convert()){
+    $fn=$converter->saveToFunction();
+    $fn($control);
+    $control->saveToOutput();
+}
 ```
 En el `archivo.xhtml` se llaman las funciones con sus respectivos parametros, y la lectura de propiedades se hace por medio del simbolo `$`
 ```xhtml
