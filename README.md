@@ -35,9 +35,13 @@ Todo el código debe estár dentro de estas etiquetas
 </LogicXHTML>
 ```
 
-# Funciones
+# Funciones y propiedades
 
 Las funciones se definen como parte del [Control][control] para ser llamadas desde el LogicXHTML
+
+Las propiedades se definen como parte del [Control][control] mediante un [Scope][scope] para ser leídas desde el LogicXHTML
+
+Tanto las funciones como las propiedades son de solo lectura dentro del LogicXHTML
 
 ```php
 $control=new \LogicXHTML\Control();
@@ -50,30 +54,21 @@ $control->fn_bind([
 ]);
 // Agrega funciones útiles como operaciones matemáticas y manipulacion de string
 $control->fn_bind(\LogicXHTML\Control::fn_plus());
-```
-En LogicXHTML se llama con parametros si es necesario:
-```html
-<!--Esto imprime: Hola mundo-->
-:{saludo("mundo")}:
-```
-
-# Propiedades
-
-Las propiedades se definen como parte del [Control][control] mediante un [Scope][scope] para ser leídas desde el LogicXHTML.
-Las propiedades son solo lectura dentro del LogicXHTML
-```php
-$control=new \LogicXHTML\Control();
+// Se definen las propiedades mediante un Scope
 $props=new \LogicXHTML\Scope();
 $props->prop_1='Valor 1';
 $props->prop_2='Valor 2';
 $control->setProps($props);
 ```
-La lectura de propiedades se hace por medio del simbolo `$`
-```html
-<!--Esto imprime: Valor 1-->
-:{$.prop_1}:
+En el `archivo.xhtml` se llaman las funciones con sus respectivos parametros, y la lectura de propiedades se hace por medio del simbolo `$`
+```xhtml
+<LogicXHTML>
+    <!--Esto imprime: Hola mundo-->
+    :{saludo("mundo")}:
+    <!--Esto imprime: Valor 1-->
+    :{$.prop_1}:
+</LogicXHTML>
 ```
-
 
 # Llaves de reemplazo
 
